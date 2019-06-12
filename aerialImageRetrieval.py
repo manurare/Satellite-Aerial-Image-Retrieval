@@ -138,7 +138,7 @@ class AerialImageRetrieval(object):
                                             pixelX2 - leftup_cornerX, pixelY2 - leftup_cornerY))
                 print("Finish the aerial image retrieval, store the image aerialImage_{0}_{1}.jpeg in folder {2}"
                       .format(idx, levl, self.tgtfolder))
-                filename = os.path.join(self.tgtfolder, 'aerialImage_{}_{}.jpeg'.format(idx, levl))
+                filename = os.path.join(self.tgtfolder, 'aerialImage_{0}_{1}.jpeg'.format(idx, levl))
                 retrieve_image.save(filename)
                 break
             
