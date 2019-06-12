@@ -1,6 +1,17 @@
 # Satellite Aerial Image Retrieval
 
 ***************
+##MODIFICATIONS:
+
+Now the script can have its original functionality:
+```bash
+python3 aerialImageRetrieval.py 41.893812 -87.615195 41.885108 -87.597778
+```
+or accept a .csv file where each line contains data in the form: lat1, lon1, lat2, lon2 where (lat1, lon1) is the latitude and longitude of the upper-left coordinate, and (lat2, lon2) is the latitude and longitude of the lower-right coordinate:
+```bash
+python3 aerialImageRetrieval.py test.csv
+```
+
 
 ### How to run the code:
 
