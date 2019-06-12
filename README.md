@@ -1,7 +1,7 @@
 # Satellite Aerial Image Retrieval
 
 ***************
-##MODIFICATIONS:
+## MODIFICATIONS:
 
 Now the script can have its original functionality:
 ```bash
