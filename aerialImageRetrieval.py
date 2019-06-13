@@ -16,11 +16,13 @@ import sys, io, os
 from urllib import request
 from PIL import Image
 import csv
+import argparse
 import matplotlib as plt
 
 from tilesystem import TileSystem
 
-
+parser = argparse.ArgumentParser()
+parser.add_argument('--level', type=int, default=-1, help='')
 BASEURL = "http://h0.ortho.tiles.virtualearth.net/tiles/h{0}.jpeg?g=131"
 IMAGEMAXSIZE = 8192 * 8192 * 8 # max width/height in pixels for the retrived image
 TILESIZE = 256              # in Bing tile system, one tile image is in size 256 * 256 pixels
@@ -47,7 +49,6 @@ class AerialImageRetrieval(object):
         except OSError:
             raise
 
-
     def download_image(self, quadkey):
         """This method is used to download a tile image given the quadkey from Bing tile system
         
@@ -60,8 +61,6 @@ class AerialImageRetrieval(object):
 
         with request.urlopen(BASEURL.format(quadkey)) as file:
             return Image.open(file)
-
-
 
     def is_valid_image(self, image):
         """Check whether the downloaded image is valid, 
@@ -81,9 +80,51 @@ class AerialImageRetrieval(object):
             nullimg.save('./null.png')
         return not (image == Image.open('./null.png'))
 
+    def retrieve(self, bbox, levl, idx):
+        pixelX1, pixelY1 = TileSystem.latlong_to_pixelXY(bbox[0], bbox[1], levl)
+        pixelX2, pixelY2 = TileSystem.latlong_to_pixelXY(bbox[2], bbox[3], levl)
 
+        pixelX1, pixelX2 = min(pixelX1, pixelX2), max(pixelX1, pixelX2)
+        pixelY1, pixelY2 = min(pixelY1, pixelY2), max(pixelY1, pixelY2)
 
-    def max_resolution_imagery_retrieval(self):
+        # Bounding box's two coordinates coincide at the same pixel, which is invalid for an aerial image.
+        # Raise error and directly return without retriving any valid image.
+        if abs(pixelX1 - pixelX2) <= 1 or abs(pixelY1 - pixelY2) <= 1:
+            print("Cannot find a valid aerial imagery for the given bounding box!")
+            return
+
+        if abs(pixelX1 - pixelX2) * abs(pixelY1 - pixelY2) > IMAGEMAXSIZE:
+            print("Current level {} results an image exceeding the maximum image size (8192 * 8192), will SKIP".format(
+                levl))
+            return False
+
+        tileX1, tileY1 = TileSystem.pixelXY_to_tileXY(pixelX1, pixelY1)
+        tileX2, tileY2 = TileSystem.pixelXY_to_tileXY(pixelX2, pixelY2)
+
+        # Stitch the tile images together
+        result = Image.new('RGB', ((tileX2 - tileX1 + 1) * TILESIZE, (tileY2 - tileY1 + 1) * TILESIZE))
+        retrieve_sucess = False
+        for tileY in range(tileY1, tileY2 + 1):
+            retrieve_sucess, horizontal_image = self.horizontal_retrieval_and_stitch_image(tileX1, tileX2, tileY, levl)
+            if not retrieve_sucess:
+                return False
+            result.paste(horizontal_image, (0, (tileY - tileY1) * TILESIZE))
+
+        if not retrieve_sucess:
+            return False
+
+        # Crop the image based on the given bounding box
+        leftup_cornerX, leftup_cornerY = TileSystem.tileXY_to_pixelXY(tileX1, tileY1)
+        retrieve_image = result.crop((pixelX1 - leftup_cornerX, pixelY1 - leftup_cornerY,
+                                      pixelX2 - leftup_cornerX, pixelY2 - leftup_cornerY))
+        print("Finish the aerial image retrieval, store the image {0}_{1}_{2}_{3}_{4}.jpeg in folder {5}"
+              .format(idx, bbox[0], bbox[1], bbox[2], bbox[3], self.tgtfolder))
+        filename = os.path.join(self.tgtfolder, '{0}_{1}_{2}_{3}_{4}.jpeg'.format(idx, bbox[0], bbox[1],
+                                                                                  bbox[2], bbox[3]))
+        retrieve_image.save(filename)
+        return True
+
+    def max_resolution_imagery_retrieval(self, level):
         """The main aerial retrieval method
 
         It will firstly determine the appropriate level used to retrieve the image.
@@ -99,50 +140,11 @@ class AerialImageRetrieval(object):
             [boolean] -- [indicate whether the aerial image retrieval is successful]
         """
         for idx, bbox in enumerate(self.coordinates_list):
-            for levl in range(TileSystem.MAXLEVEL, 0, -1):
-                pixelX1, pixelY1 = TileSystem.latlong_to_pixelXY(bbox[0], bbox[1], levl)
-                pixelX2, pixelY2 = TileSystem.latlong_to_pixelXY(bbox[2], bbox[3], levl)
-
-                pixelX1, pixelX2 = min(pixelX1, pixelX2), max(pixelX1, pixelX2)
-                pixelY1, pixelY2 = min(pixelY1, pixelY2), max(pixelY1, pixelY2)
-
-
-                #Bounding box's two coordinates coincide at the same pixel, which is invalid for an aerial image.
-                #Raise error and directly return without retriving any valid image.
-                if abs(pixelX1 - pixelX2) <= 1 or abs(pixelY1 - pixelY2) <= 1:
-                    print("Cannot find a valid aerial imagery for the given bounding box!")
-                    return
-
-                if abs(pixelX1 - pixelX2) * abs(pixelY1 - pixelY2) > IMAGEMAXSIZE:
-                    print("Current level {} results an image exceeding the maximum image size (8192 * 8192), will SKIP".format(levl))
-                    continue
-
-                tileX1, tileY1 = TileSystem.pixelXY_to_tileXY(pixelX1, pixelY1)
-                tileX2, tileY2 = TileSystem.pixelXY_to_tileXY(pixelX2, pixelY2)
-
-                # Stitch the tile images together
-                result = Image.new('RGB', ((tileX2 - tileX1 + 1) * TILESIZE, (tileY2 - tileY1 + 1) * TILESIZE))
-                retrieve_sucess = False
-                for tileY in range(tileY1, tileY2 + 1):
-                    retrieve_sucess, horizontal_image = self.horizontal_retrieval_and_stitch_image(tileX1, tileX2, tileY, levl)
-                    if not retrieve_sucess:
-                        break
-                    result.paste(horizontal_image, (0, (tileY - tileY1) * TILESIZE))
-
-                if not retrieve_sucess:
-                    continue
-
-                # Crop the image based on the given bounding box
-                leftup_cornerX, leftup_cornerY = TileSystem.tileXY_to_pixelXY(tileX1, tileY1)
-                retrieve_image = result.crop((pixelX1 - leftup_cornerX, pixelY1 - leftup_cornerY, \
-                                            pixelX2 - leftup_cornerX, pixelY2 - leftup_cornerY))
-                print("Finish the aerial image retrieval, store the image aerialImage_{0}_{1}.jpeg in folder {2}"
-                      .format(idx, levl, self.tgtfolder))
-                filename = os.path.join(self.tgtfolder, 'aerialImage_{0}_{1}.jpeg'.format(idx, levl))
-                retrieve_image.save(filename)
-                break
-            
-
+            if level <= 0:
+                for levl in range(TileSystem.MAXLEVEL, 0, -1):
+                    self.retrieve(bbox, levl, idx)
+            else:
+                self.retrieve(bbox, level, idx)
 
     def horizontal_retrieval_and_stitch_image(self, tileX_start, tileX_end, tileY, level):
         """Horizontally retrieve tile images and then stitch them together,
@@ -174,7 +176,6 @@ class AerialImageRetrieval(object):
         return True, result
         
 
-
 def main():
     """The main entrance.
     Decode the upper left and lower right coordinates, and retrieve the aerial image withing that bounding box  
@@ -182,7 +183,12 @@ def main():
 
     # decode the bounding box coordinates
     try:
-        args = sys.argv[1:]
+        command_args, _ = parser.parse_known_args()
+        level = command_args.level
+        if level != -1:
+            args = sys.argv[1:-2:1]
+        else:
+            args = sys.argv[1:]
     except IndexError:
         sys.exit('Diagonal (Latitude, Longitude) coordinates of the bounding box must be input')
     if len(args) != 4 and len(args) != 1:
@@ -203,14 +209,15 @@ def main():
 
     # Retrieve the aerial image
     if len(args) == 4:
-        # lat1 = 41.882981
-        # lon1 = - 87.623496
-        # lat2 = 41.882397
-        # lon2 = - 87.623076
+        # lat1 = 41.893812
+        # lon1 = -87.615195
+        # lat2 = 41.885108
+        # lon2 = -87.597778
         imgretrieval = AerialImageRetrieval(lat1=lat1, lon1=lon1, lat2=lat2, lon2=lon2)
     else:
         imgretrieval = AerialImageRetrieval(coordinates_list=coordinates_list)
-    if imgretrieval.max_resolution_imagery_retrieval():
+
+    if imgretrieval.max_resolution_imagery_retrieval(level):
         print("Successfully retrieve the image with maximum resolution!")
     else:
         print("Cannot retrieve the desired image! (Possible reason: expected tile image does not exist.)")

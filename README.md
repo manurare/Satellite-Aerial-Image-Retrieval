@@ -11,6 +11,11 @@ or accept a .csv file where each line contains data in the form: lat1, lon1, lat
 ```bash
 python3 aerialImageRetrieval.py test.csv
 ```
+Also the script can run with just a particular level value where the value is an integer:
+```bash
+python3 aerialImageRetrieval.py test.csv --level X
+python3 aerialImageRetrieval.py 41.893812 -87.615195 41.885108 -87.597778 --level X
+```
 
 
 ### How to run the code:
@@ -24,13 +29,9 @@ Please make sure the following environment is configured:
 To run the script, simply input the following commands in Terminal:
 
 ```bash
-python3 ProbeMapMatching.py lat1, lon1, lat2, lon2,
+python3 ProbeMapMatching.py lat1, lon1, lat2, lon2
+python3 ProbeMapMatching.py name_file.csv
 ```
-
-where (lat1, lon1) is the latitude and longitude of the upper-left coordinate, and (lat2, lon2) is the latitude and longitude of the lower-right coordinate. 
-
-In my code, my program tolerates arbitrary coordinates input, as long as the two coordinates are diagonal. My program will figure out to transform the input coordinates to the standardized one before processing.
-
 
 The retrieved image will be stored in `.\output` folder. The name of the image will follow the 'aerialImage_{}.jpeg' ending with the retrieval level. 
 
