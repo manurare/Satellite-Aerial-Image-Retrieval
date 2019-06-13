@@ -36,7 +36,7 @@ class AerialImageRetrieval(object):
     """
     def __init__(self, lat1=0.0, lon1=0.0, lat2=0.0, lon2=0.0, coordinates_list=[]):
         if len(coordinates_list) == 0:
-            coordinates_list.append([lat1, lon1, lat2, lon2])
+            coordinates_list.append([0, lat1, lon1, lat2, lon2])
             self.coordinates_list = coordinates_list
         else:
             self.coordinates_list = coordinates_list
@@ -81,8 +81,8 @@ class AerialImageRetrieval(object):
         return not (image == Image.open('./null.png'))
 
     def retrieve(self, bbox, levl, idx):
-        pixelX1, pixelY1 = TileSystem.latlong_to_pixelXY(bbox[0], bbox[1], levl)
-        pixelX2, pixelY2 = TileSystem.latlong_to_pixelXY(bbox[2], bbox[3], levl)
+        pixelX1, pixelY1 = TileSystem.latlong_to_pixelXY(bbox[1], bbox[2], levl)
+        pixelX2, pixelY2 = TileSystem.latlong_to_pixelXY(bbox[3], bbox[4], levl)
 
         pixelX1, pixelX2 = min(pixelX1, pixelX2), max(pixelX1, pixelX2)
         pixelY1, pixelY2 = min(pixelY1, pixelY2), max(pixelY1, pixelY2)
@@ -118,9 +118,9 @@ class AerialImageRetrieval(object):
         retrieve_image = result.crop((pixelX1 - leftup_cornerX, pixelY1 - leftup_cornerY,
                                       pixelX2 - leftup_cornerX, pixelY2 - leftup_cornerY))
         print("Finish the aerial image retrieval, store the image {0}_{1}_{2}_{3}_{4}.jpeg in folder {5}"
-              .format(idx, bbox[0], bbox[1], bbox[2], bbox[3], self.tgtfolder))
-        filename = os.path.join(self.tgtfolder, '{0}_{1}_{2}_{3}_{4}.jpeg'.format(idx, bbox[0], bbox[1],
-                                                                                  bbox[2], bbox[3]))
+              .format(bbox[0], bbox[1], bbox[2], bbox[3], bbox[4], self.tgtfolder))
+        filename = os.path.join(self.tgtfolder, '{0}_{1}_{2}_{3}_{4}.jpeg'.format(bbox[0], bbox[1],
+                                                                                  bbox[2], bbox[3], bbox[4]))
         retrieve_image.save(filename)
         return True
 
@@ -203,7 +203,7 @@ def main():
             with open(csv_file, newline='') as csvfile:
                 spamreader = csv.reader(csvfile, delimiter=',', skipinitialspace=True)
                 for row in spamreader:
-                    coordinates_list.append([float(row[0]), float(row[1]), float(row[2]), float(row[3])])
+                    coordinates_list.append([int(row[0]), float(row[1]), float(row[2]), float(row[3]), float(row[4])])
     except ValueError:
         sys.exit('Latitude and longitude must be float type')
 
