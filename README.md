@@ -33,7 +33,7 @@ python3 ProbeMapMatching.py lat1, lon1, lat2, lon2
 python3 ProbeMapMatching.py name_file.csv
 ```
 
-The retrieved image will be stored in `.\output` folder. The name of the image will follow the 'aerialImage_{}.jpeg' ending with the retrieval level. 
+The retrieved image will be stored in `.\output` folder. The name of the image will follow the 'idx_lat1_lon1_lat2_lon2.jpeg' idx is the line number of those coordinates in the .csv file. If only some isolated coordinates are passed then the idx will be 0.
 
 Some sample retrievals could be:
 
