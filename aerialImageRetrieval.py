@@ -23,7 +23,7 @@ from tilesystem import TileSystem
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--level', type=int, default=-1, help='')
-BASEURL = "http://h0.ortho.tiles.virtualearth.net/tiles/h{0}.jpeg?g=131"
+BASEURL = "http://h0.ortho.tiles.virtualearth.net/tiles/a{0}.jpeg?g=131"
 IMAGEMAXSIZE = 8192 * 8192 * 8 # max width/height in pixels for the retrived image
 TILESIZE = 256              # in Bing tile system, one tile image is in size 256 * 256 pixels
 
@@ -60,6 +60,7 @@ class AerialImageRetrieval(object):
         """
 
         with request.urlopen(BASEURL.format(quadkey)) as file:
+            # print(BASEURL.format(quadkey))
             return Image.open(file)
 
     def is_valid_image(self, image):
@@ -142,7 +143,11 @@ class AerialImageRetrieval(object):
         for idx, bbox in enumerate(self.coordinates_list):
             if level <= 0:
                 for levl in range(TileSystem.MAXLEVEL, 0, -1):
-                    self.retrieve(bbox, levl, idx)
+                    return_value = self.retrieve(bbox, levl, idx)
+                    if return_value:
+                        break
+                    else:
+                        continue
             else:
                 self.retrieve(bbox, level, idx)
 
