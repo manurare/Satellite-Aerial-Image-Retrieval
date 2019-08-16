@@ -120,8 +120,11 @@ class AerialImageRetrieval(object):
                                       pixelX2 - leftup_cornerX, pixelY2 - leftup_cornerY))
         print("Finish the aerial image retrieval, store the image {0}_{1}_{2}_{3}_{4}.jpeg in folder {5}"
               .format(bbox[0], bbox[1], bbox[2], bbox[3], bbox[4], self.tgtfolder))
-        filename = os.path.join(self.tgtfolder, '{0}_{1}_{2}_{3}_{4}.jpeg'.format(bbox[0], bbox[1],
-                                                                                  bbox[2], bbox[3], bbox[4]))
+        # filename = os.path.join(self.tgtfolder, '{0}_{1}_{2}_{3}_{4}.jpeg'.format(bbox[0], bbox[1],
+        #                                                                           bbox[2], bbox[3], bbox[4]))
+        ##Save as consecutive numbers
+        filename = os.path.join(self.tgtfolder, '{:>05}.jpeg'.format(idx))
+        ####
         retrieve_image.save(filename)
         return True
 
